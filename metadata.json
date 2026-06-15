@@ -1,0 +1,6 @@
+{
+  "name": "ABC Church",
+  "description": "Comprehensive Information System for ABC Church in Grand Rapids. Manage members, Sunday collections, capital campaign pledges, and ceremony tracking with reporting to regional headquarters.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
