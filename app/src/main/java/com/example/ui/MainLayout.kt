@@ -5,6 +5,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -36,94 +37,142 @@ enum class ChurchTab(val title: String) {
     Households("Households"),
     Collections("Collections"),
     Ceremonies("Ceremonies"),
-    DetroitReports("Detroit Report")
+    DetroitReports("Detroit Report"),
+    FirebaseSync("Firebase Cloud")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainLayout(viewModel: ChurchViewModel) {
-    var currentTab by remember { mutableStateOf(ChurchTab.Dashboard) }
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.primary
-                ),
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Home,
-                            contentDescription = "Church Logo",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                        Column {
-                            Text(
-                                text = "ABC Church",
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.primary
+    if (currentUser == null) {
+        LoginScreen(viewModel = viewModel)
+    } else {
+        var currentTab by remember { mutableStateOf(ChurchTab.Dashboard) }
+        val snackbarHostState = remember { SnackbarHostState() }
+        val scope = rememberCoroutineScope()
+
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            topBar = {
+                TopAppBar(
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        titleContentColor = MaterialTheme.colorScheme.primary
+                    ),
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Home,
+                                contentDescription = "Church Logo",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(end = 8.dp)
                             )
-                            Text(
-                                text = "Grand Rapids, Michigan • Information System",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                            )
+                            Column {
+                                Text(
+                                    text = "ABC Church",
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = "Grand Rapids, Michigan • Info System",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                                )
+                            }
+                        }
+                    },
+                    actions = {
+                        currentUser?.let { user ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(end = 12.dp)
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.End,
+                                    modifier = Modifier.padding(end = 8.dp)
+                                ) {
+                                    Text(
+                                        text = user.username,
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = user.role.roleTitle,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = AccentGold
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { viewModel.logout() },
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(SoftRed.copy(alpha = 0.1f), CircleShape)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ExitToApp,
+                                        contentDescription = "Log Out",
+                                        tint = SoftRed,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
                         }
                     }
-                }
-            )
-        },
-        bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
-                tonalElevation = 8.dp
-            ) {
-                ChurchTab.values().forEach { tab ->
-                    NavigationBarItem(
-                        selected = currentTab == tab,
-                        onClick = { currentTab = tab },
-                        label = { Text(tab.title, fontSize = 11.sp, fontWeight = FontWeight.Medium) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        ),
-                        icon = {
-                            val iconVector = when (tab) {
-                                ChurchTab.Dashboard -> Icons.Default.Info
-                                ChurchTab.Households -> Icons.Default.Person
-                                ChurchTab.Collections -> Icons.Default.Star
-                                ChurchTab.Ceremonies -> Icons.Default.Favorite
-                                ChurchTab.DetroitReports -> Icons.Default.Send
+                )
+            },
+            bottomBar = {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 8.dp
+                ) {
+                    ChurchTab.values().forEach { tab ->
+                        NavigationBarItem(
+                            selected = currentTab == tab,
+                            onClick = { currentTab = tab },
+                            label = { Text(tab.title, fontSize = 11.sp, fontWeight = FontWeight.Medium) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            ),
+                            icon = {
+                                val iconVector = when (tab) {
+                                    ChurchTab.Dashboard -> Icons.Default.Info
+                                    ChurchTab.Households -> Icons.Default.Person
+                                    ChurchTab.Collections -> Icons.Default.Star
+                                    ChurchTab.Ceremonies -> Icons.Default.Favorite
+                                    ChurchTab.DetroitReports -> Icons.Default.Send
+                                    ChurchTab.FirebaseSync -> Icons.Default.Refresh
+                                }
+                                Icon(
+                                    imageVector = iconVector,
+                                    contentDescription = tab.title
+                                )
                             }
-                            Icon(
-                                imageVector = iconVector,
-                                contentDescription = tab.title
-                            )
-                        }
-                    )
+                        )
+                    }
                 }
-            }
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            when (currentTab) {
-                ChurchTab.Dashboard -> DashboardScreen(viewModel)
-                ChurchTab.Households -> HouseholdsScreen(viewModel)
-                ChurchTab.Collections -> CollectionsScreen(viewModel)
-                ChurchTab.Ceremonies -> CeremoniesScreen(viewModel)
-                ChurchTab.DetroitReports -> DetroitReportsScreen(viewModel)
+            },
+            containerColor = MaterialTheme.colorScheme.background
+        ) { innerPadding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                when (currentTab) {
+                    ChurchTab.Dashboard -> DashboardScreen(viewModel)
+                    ChurchTab.Households -> HouseholdsScreen(viewModel)
+                    ChurchTab.Collections -> CollectionsScreen(viewModel)
+                    ChurchTab.Ceremonies -> CeremoniesScreen(viewModel)
+                    ChurchTab.DetroitReports -> DetroitReportsScreen(viewModel)
+                    ChurchTab.FirebaseSync -> FirebaseSyncScreen(viewModel)
+                }
             }
         }
     }
@@ -141,6 +190,7 @@ fun formatDate(timestamp: Long): String {
 
 @Composable
 fun DashboardScreen(viewModel: ChurchViewModel) {
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val households by viewModel.households.collectAsStateWithLifecycle()
     val contributions by viewModel.contributions.collectAsStateWithLifecycle()
     val ceremonies by viewModel.ceremonies.collectAsStateWithLifecycle()
@@ -163,6 +213,7 @@ fun DashboardScreen(viewModel: ChurchViewModel) {
     ) {
         // Welcome Header
         item {
+            val user = currentUser
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -171,29 +222,93 @@ fun DashboardScreen(viewModel: ChurchViewModel) {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Grace & Welcome",
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (user != null) "Greetings, ${user.role.displayName}!" else "Grace & Welcome",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        user?.let {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = user.role.roleTitle,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "ABC Church is a fast-growing community in Grand Rapids, Michigan. Since Lead Reverend Timothy Beck took charge three years ago, our parish has more than doubled in size to approximately 400 registered households.",
+                        text = when (user?.role) {
+                            UserRole.PASTOR_BECK -> "Lead Reverend administration. Manage registrations, contributions, ceremonies, and campaigns."
+                            UserRole.PASTOR_HOWARD -> "Associate Minister. Review family registers and log baptisms, marriages, or funerals."
+                            UserRole.BUSINESS_MANAGER -> "Business Manager logs. Enter envelope offerings, process statements, and compile reports."
+                            UserRole.ASSISTANT_CLERK -> "Clerk console. Manage household records, contact info, and envelope batches."
+                            UserRole.MAINTENANCE -> "Property console. Oversee facilities, paving, and maintenance records."
+                            UserRole.CHOIR_DIRECTOR -> "Music ministry. Coordinates rehearsals, volunteers, and liturgy sheets."
+                            else -> "ABC Church database system. Approximately 400 registered families."
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onBackground
                     )
+                    
+                    user?.let { session ->
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                .padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (session.role == UserRole.PASTOR_BECK) Icons.Default.CheckCircle else Icons.Default.Info,
+                                contentDescription = "Access",
+                                tint = AccentGold,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Authorized Security: ${session.role.systemAccess}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                    
                     Divider(modifier = Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
                     
                     Text(
-                        text = "Congregation Staff & Leadership:",
+                        text = "Parish Leadership Tasks & Focus areas:",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
+                    
                     Text(
-                        text = "• Reverend Timothy Beck (First Minister)\n• Reverend Jason Howard (Second Minister, Associate)\n• Margie Robbens (Business Manager)\n• Mabel McConahey (Part-time Assistant & Clerk)\n• Leroy Strickly (Part-time Maintenance Operator)\n• Jack Fogerty (Part-time Choir Director, 10 Volunteers)",
+                        text = when (user?.role) {
+                            UserRole.PASTOR_BECK -> "• Audit quarterly Detroit parish metrics\n• Liturgy preparation & coordination\n• Review lot paving & loans"
+                            UserRole.PASTOR_HOWARD -> "• Preside Sunday Associate Liturgy\n• Senior homebound ministry visits\n• Check confirmation study hours"
+                            UserRole.BUSINESS_MANAGER -> "• Record envelope offerings\n• Audit capital project cash reserves\n• Year-end receipt generation"
+                            UserRole.ASSISTANT_CLERK -> "• Register new families\n• Confirm envelope batch shipments\n• Respond to office items"
+                            UserRole.MAINTENANCE -> "• Property layout & lot design prep\n• Boiler room and facilities inspection\n• Weekly maintenance duties"
+                            UserRole.CHOIR_DIRECTOR -> "• Wed 7PM Practice (10 volunteers)\n• Choral response sheets selection\n• Member section follow-up"
+                            else -> "• Minister: Rev. Timothy Beck\n• Clerk: Mabel McConahey\n• Business: Margie Robbens\n• Facilities: Leroy Strickly"
+                        },
                         fontSize = 12.sp,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
@@ -233,7 +348,7 @@ fun DashboardScreen(viewModel: ChurchViewModel) {
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Acquisition, paving, and setup of the adjacent property to expand member parking to accommodate growing attendance.",
+                        text = "Acquisition and paving of adjacent property to expand member parking.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
@@ -2200,5 +2315,352 @@ fun DetroitReportsScreen(viewModel: ChurchViewModel) {
                 )
             }
         }
+    }
+}
+
+@Composable
+fun FirebaseSyncScreen(viewModel: ChurchViewModel) {
+    val households by viewModel.households.collectAsStateWithLifecycle()
+    val contributions by viewModel.contributions.collectAsStateWithLifecycle()
+    val ceremonies by viewModel.ceremonies.collectAsStateWithLifecycle()
+    val syncStatus by viewModel.firebaseSyncStatus.collectAsStateWithLifecycle()
+
+    var consoleText by remember { mutableStateOf("System console initiated.\nReady.") }
+    val isConfigured = viewModel.isFirebaseConfigured()
+    val isActive = viewModel.isFirebaseActive()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // --- HEADER ---
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Cloud",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = "Firebase Cloud Registry",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Backup databases or synchronize parish records across computers.",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            }
+        }
+
+        // --- EXPLANATION PANEL ---
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Text(
+                    text = "Cloud Synchronization Guide",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "This utility connects to your private Firebase Cloud Firestore database. Local state resides in local SQLite tables and can be backed up to the cloud on-demand.",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    lineHeight = 16.sp
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = "💡 ABC Church Connection Guide:\n" +
+                            " • Project ID: abc-church-59d33 (Auto-configured fallback!)\n" +
+                            " • Project Number: 852736286883\n" +
+                            " • To fully connect, please enter these secrets in the AI Studio SECRETS panel:\n" +
+                            "   1. FIREBASE_API_KEY: Paste your Web API Key (found in Project Settings).\n" +
+                            "   2. FIREBASE_APP_ID: Create an Android App in your Firebase console with package name 'com.aistudio.abcchurch.vktpzn', and paste its App ID (looks like 1:852736286883:android:xxxx).",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AccentGold,
+                    lineHeight = 15.sp
+                )
+            }
+        }
+
+        // --- CONNECTION STATUS ---
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Configuration Card
+            Card(
+                modifier = Modifier.weight(1f),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isConfigured) SoftGreen.copy(alpha = 0.08f) else SoftRed.copy(alpha = 0.08f)
+                ),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = if (isConfigured) SoftGreen.copy(alpha = 0.2f) else SoftRed.copy(alpha = 0.2f)
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = if (isConfigured) Icons.Default.Check else Icons.Default.Warning,
+                        contentDescription = "Status",
+                        tint = if (isConfigured) SoftGreen else SoftRed,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Configured",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        color = if (isConfigured) SoftGreen else SoftRed
+                    )
+                    Text(
+                        text = if (isConfigured) "Secrets Found" else "Secrets Missing",
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            }
+
+            // Connection Active Card
+            Card(
+                modifier = Modifier.weight(1f),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isActive) SoftGreen.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                ),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = if (isActive) SoftGreen.copy(alpha = 0.2f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = if (isActive) Icons.Default.Check else Icons.Default.Warning,
+                        contentDescription = "Active",
+                        tint = if (isActive) SoftGreen else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Cloud Status",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        color = if (isActive) SoftGreen else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                    Text(
+                        text = if (isActive) "Active & Initialized" else "Offline / Idle",
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            }
+        }
+
+        // --- LOCAL METRICS SUMMARY ---
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Text(
+                    text = "Local Databases Ready to Sync",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text("Households", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                        Text("${households.size} records", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+                    Column {
+                        Text("Contributions", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                        Text("${contributions.size} ledger records", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+                    Column {
+                        Text("Ceremonies", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                        Text("${ceremonies.size} records", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+                }
+            }
+        }
+
+        // --- ACTION BUTTONS ---
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+        ) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "Synchronization Commands",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                // Sync Backup (Push) Button
+                Button(
+                    onClick = {
+                        consoleText += "\n[ACTION] Starting backup upload sequence..."
+                        viewModel.syncDataToFirebase { success, message ->
+                            consoleText += if (success) {
+                                "\n[SUCCESS] $message"
+                            } else {
+                                "\n[ERROR] $message"
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = syncStatus != "SYNCING" && syncStatus != "RESTORING" && isConfigured,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    if (syncStatus == "SYNCING") {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Uploading Backup...")
+                    } else {
+                        Icon(imageVector = Icons.Default.Refresh, contentDescription = "Sync", modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Backup Local Database to Cloud")
+                    }
+                }
+
+                // Sync Restore (Pull) Button
+                Button(
+                    onClick = {
+                        consoleText += "\n[ACTION] Requesting cloud pull sequence..."
+                        viewModel.restoreDataFromFirebase { success, message ->
+                            consoleText += if (success) {
+                                "\n[SUCCESS] $message"
+                            } else {
+                                "\n[ERROR] $message"
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = syncStatus != "SYNCING" && syncStatus != "RESTORING" && isConfigured,
+                    colors = ButtonDefaults.buttonColors(containerColor = SoftRed)
+                ) {
+                    if (syncStatus == "RESTORING") {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Restoring Data...")
+                    } else {
+                        Icon(imageVector = Icons.Default.Settings, contentDescription = "Restore", modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Restore Local SQLite from Cloud")
+                    }
+                }
+                
+                if (!isConfigured) {
+                    Text(
+                        text = "⚠️ Cloud actions disabled until Firebase credentials are set in the Secrets flow.",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SoftRed,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
+        }
+
+        // --- CONSOLE OUTPUT LOG ---
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+            border = BorderStroke(1.dp, Color(0xFF333333))
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "System Monitor & Logs",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp,
+                        color = Color(0xFFAAAAAA),
+                        fontFamily = FontFamily.Monospace
+                    )
+                    IconButton(
+                        onClick = { consoleText = "System console cleared." },
+                        modifier = Modifier.size(18.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Clear Console",
+                            tint = Color(0xFF888888),
+                            modifier = Modifier.size(12.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(80.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        text = consoleText,
+                        color = Color(0xFF00FF00),
+                        fontSize = 10.sp,
+                        fontFamily = FontFamily.Monospace,
+                        lineHeight = 14.sp
+                    )
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }

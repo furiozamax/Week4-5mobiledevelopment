@@ -17,6 +17,9 @@ interface HouseholdDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertHousehold(household: Household): Long
 
+    @Query("DELETE FROM households")
+    suspend fun deleteAllHouseholds()
+
     @Update
     suspend fun updateHousehold(household: Household)
 
@@ -35,6 +38,9 @@ interface ContributionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertContribution(contribution: Contribution): Long
 
+    @Query("DELETE FROM contributions")
+    suspend fun deleteAllContributions()
+
     @Delete
     suspend fun deleteContribution(contribution: Contribution)
 }
@@ -46,6 +52,9 @@ interface CeremonyDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCeremony(ceremony: Ceremony): Long
+
+    @Query("DELETE FROM ceremonies")
+    suspend fun deleteAllCeremonies()
 
     @Update
     suspend fun updateCeremony(ceremony: Ceremony)

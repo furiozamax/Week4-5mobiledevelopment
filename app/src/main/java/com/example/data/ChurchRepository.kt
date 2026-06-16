@@ -56,6 +56,26 @@ class ChurchRepository(private val db: AppDatabase) {
     suspend fun updateCeremony(ceremony: Ceremony) = db.ceremonyDao.updateCeremony(ceremony)
     suspend fun deleteCeremony(ceremony: Ceremony) = db.ceremonyDao.deleteCeremony(ceremony)
 
+    suspend fun replaceLocalDatabaseContent(
+        householdsList: List<Household>,
+        contributionsList: List<Contribution>,
+        ceremoniesList: List<Ceremony>
+    ) {
+        db.householdDao.deleteAllHouseholds()
+        db.contributionDao.deleteAllContributions()
+        db.ceremonyDao.deleteAllCeremonies()
+
+        for (hh in householdsList) {
+            db.householdDao.insertHousehold(hh)
+        }
+        for (c in contributionsList) {
+            db.contributionDao.insertContribution(c)
+        }
+        for (cr in ceremoniesList) {
+            db.ceremonyDao.insertCeremony(cr)
+        }
+    }
+
     // Prepopulate some starting church information if database is empty
     suspend fun prepopulateIfEmpty() {
         val count = db.householdDao.getAllHouseholds().first().size
